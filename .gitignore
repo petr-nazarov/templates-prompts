@@ -1,0 +1,356 @@
+# =============================================================================
+# Temporary files
+# =============================================================================
+tmp/
+temp/
+.tmp/
+.temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+*.swp
+*.swo
+*.swn
+*~
+.#*
+\#*#
+
+# =============================================================================
+# Logs
+# =============================================================================
+logs/
+log/
+*.log
+*.log.*
+*.out
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log*
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# =============================================================================
+# Databases & SQL
+# =============================================================================
+*.sql
+*.sql.gz
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.dump
+*.mdb
+*.ldf
+*.mdf
+# Uncomment to keep versioned migrations while ignoring other SQL:
+# !**/migrations/**/*.sql
+
+# =============================================================================
+# Metrics, profiling, coverage & reports
+# =============================================================================
+metrics/
+.metrics/
+coverage/
+.coverage
+.coverage.*
+htmlcov/
+.nyc_output/
+lib-cov/
+*.lcov
+coverage.xml
+*.cover
+*.py,cover
+nosetests.xml
+junit*.xml
+test-results/
+test-reports/
+reports/
+*.prof
+*.profile
+*.pstats
+*.cpuprofile
+*.heapsnapshot
+*.heapprofile
+prof/
+.benchmarks/
+flamegraph*.svg
+perf.data*
+
+# =============================================================================
+# Secrets & environment
+# =============================================================================
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+.envrc
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.jks
+*.keystore
+secrets/
+.secrets
+credentials.json
+service-account*.json
+.netrc
+.npmrc.local
+.pypirc
+
+# =============================================================================
+# Node.js / JavaScript / TypeScript
+# =============================================================================
+node_modules/
+jspm_packages/
+web_modules/
+bower_components/
+.npm/
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.yarn-integrity
+.pnp.*
+.pnpm-store/
+*.tgz
+
+# Build output
+dist/
+build/
+out/
+lib-build/
+.output/
+.next/
+.nuxt/
+.svelte-kit/
+.astro/
+.vercel/
+.netlify/
+.docusaurus/
+.expo/
+.expo-shared/
+storybook-static/
+.vuepress/dist/
+.serverless/
+.dynamodb/
+.fusebox/
+.webpack/
+.parcel-cache/
+.turbo/
+.nx/cache/
+.angular/
+
+# Caches
+.cache/
+.eslintcache
+.stylelintcache
+.prettiercache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+*.tsbuildinfo
+.node_repl_history
+.vite/
+vite.config.*.timestamp-*
+.vitest/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# =============================================================================
+# Python
+# =============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Packaging
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.virtualenv/
+.pdm-python
+.pdm-build/
+__pypackages__/
+.pixi/
+.conda/
+
+# Tooling caches
+.pytest_cache/
+.tox/
+.nox/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+.hypothesis/
+cython_debug/
+.ipynb_checkpoints/
+profile_default/
+ipython_config.py
+.pybuilder/
+target/
+instance/
+.webassets-cache
+.scrapy
+docs/_build/
+site/
+celerybeat-schedule
+celerybeat.pid
+*.sage.py
+.spyderproject
+.spyproject
+.ropeproject
+
+# =============================================================================
+# macOS
+# =============================================================================
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+*.icloud
+
+# =============================================================================
+# Windows
+# =============================================================================
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# =============================================================================
+# Linux
+# =============================================================================
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+nohup.out
+core
+core.[0-9]*
+
+# =============================================================================
+# Editors & IDEs
+# =============================================================================
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+.history/
+.idea/
+*.iml
+*.ipr
+*.iws
+.fleet/
+.zed/
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+nbproject/
+.netbeans/
+tags
+TAGS
+.tags
+.vim/
+Session.vim
+Sessionx.vim
+[._]*.un~
+.cursor/
+
+# =============================================================================
+# Containers, infra & misc
+# =============================================================================
+.docker/
+docker-compose.override.yml
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+crash.log
+.vagrant/
+*.local
+*.cache
+.sass-cache/
+.grunt/
+.lock-wscript
+.dropbox
+.dropbox.attr
+.dropbox.cache
