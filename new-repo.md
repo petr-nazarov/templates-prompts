@@ -50,7 +50,9 @@ user still has to do.**
   (`git -C <it> pull --ff-only` first). Otherwise clone
   `https://github.com/petr-nazarov/templates-prompts` into a scratch folder.
   Read `README.md` and then **every** file listed there, in full, before
-  doing anything else.
+  doing anything else. Note the templates commit
+  (`git -C <templates> rev-parse HEAD`): the repo records it as the version
+  it was built from.
 - **Mode:**
   - **New**: the target folder is empty, or has no commits. Build everything.
   - **Existing**: the repo has code. Audit it against every checklist first
@@ -128,9 +130,13 @@ one, work on a branch (`chore/adopt-templates`) and open a PR at the end.
   `Dockerfile` and `.dockerignore` (if it ships an image), and the GitHub
   workflows (`release-deploy.md` §5). Commit: `ci: add build and release
   workflows`.
-- **Skills:** `cm` and `handover`, then `tickets` and its labels if chosen,
-  then `setup-machine`, tested on a fresh clone of the repo in a scratch
-  folder. Commit: `chore(skills): add repo skills`.
+- **Skills:** `cm`, `handover` and `sync-templates`, then `tickets` and its
+  labels if chosen, then `setup-machine`, tested on a fresh clone of the repo
+  in a scratch folder. Commit: `chore(skills): add repo skills`.
+- **Sync record:** `docs/templates-sync.md` (`required-skills.md` §3.1) with
+  the templates commit from §1, and one Declined row for each departure made
+  during the bootstrap, with its reason. `/sync-templates` starts from this
+  later. Commit: `docs: record templates version`.
 
 Anything that goes beyond the foundation (the first real feature, the data
 model) isn't part of the bootstrap. It goes through Superpowers:
@@ -147,7 +153,8 @@ brainstorm, then spec, then plan.
   - What was built, as one list: each checklist item as done, skipped (with
     the reason) or failed (with the error). Never call the bootstrap
     complete while an item failed.
-  - Every departure from the templates, with the reason.
+  - Every departure from the templates, with the reason (also recorded in
+    `docs/templates-sync.md`).
   - What the user still has to do: secrets to fill in, GHCR package
     visibility, branch protection on `main`, DNS, the first
     `just release minor`.

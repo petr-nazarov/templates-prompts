@@ -23,6 +23,14 @@ The agent gets the templates, asks all its questions in one round, then
 builds the foundation, verifies it against every checklist, and reports
 what's left for you (secrets, logins, GitHub settings).
 
+## Keep a repo in sync
+
+Each repo records the templates commit it was built from in
+`docs/templates-sync.md`. When the templates change, run `/sync-templates`
+in that repo: it goes through every change since then, asks whether to apply
+each one to this repo, applies the accepted ones to the repo's own docs,
+setup and code, and records every decision.
+
 ## Rules in every repo
 
 - **Semantic Versioning** for releases and **Conventional Commits** for
@@ -60,7 +68,7 @@ what's left for you (secrets, logins, GitHub settings).
 | File | What it covers | Produces |
 |---|---|---|
 | [`ai-instructions.md`](ai-instructions.md) | Claude Code setup: `AGENTS.md` + `CLAUDE.md` symlink, committed settings with Superpowers, hooks, `.mcp.json` without secrets, worktrees, where new knowledge goes, and an `AGENTS.md` template. | `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.mcp.json` |
-| [`required-skills.md`](required-skills.md) | What the `cm` (commit, push, PR, merge) and `handover` skills must do. | `.claude/skills/cm/`, `.claude/skills/handover/` |
+| [`required-skills.md`](required-skills.md) | What the `cm` (commit, push, PR, merge), `handover` and `sync-templates` (bring later template changes into the repo) skills must do. | `.claude/skills/cm/`, `.claude/skills/handover/`, `.claude/skills/sync-templates/` |
 | [`setup-machine-skill.md`](setup-machine-skill.md) | How to write the repo's `setup-machine` skill: bare clone to a working `just dev`, with the user doing every login. | `.claude/skills/setup-machine/` |
 | [`ticketing.md`](ticketing.md) | GitHub Issues ticketing: the `tickets` skill, issue template, account-check script, labels and status flow. Tickets are created only when the user asks for one. Only when GitHub Issues is the chosen tracker. | `.claude/skills/tickets/` |
 

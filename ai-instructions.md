@@ -24,7 +24,7 @@ Every repo has these files:
 | `.claude/settings.json` | Yes | Shared permissions, hooks and plugins (Superpowers). |
 | `.claude/settings.local.json` | No | Personal overrides. Gitignored. |
 | `.mcp.json` | Yes | MCP servers the project uses. No secrets in it. |
-| `.claude/skills/<name>/SKILL.md` | Yes | Repo skills. Every repo has `cm` and `handover` (`required-skills.md`), `setup-machine` (`setup-machine-skill.md`), and `tickets` if it uses GitHub Issues (`ticketing.md`). |
+| `.claude/skills/<name>/SKILL.md` | Yes | Repo skills. Every repo has `cm`, `handover` and `sync-templates` (`required-skills.md`), `setup-machine` (`setup-machine-skill.md`), and `tickets` if it uses GitHub Issues (`ticketing.md`). |
 | `.claude/agents/<name>.md` | Yes | Repo-specific subagents, only when a task keeps repeating. |
 | `.claude/hooks/*.sh` | Yes | Hook scripts that enforce the hard rules (see below). |
 | `docs/superpowers/specs/`, `docs/superpowers/plans/` | Yes | Superpowers specs and plans. |
@@ -354,6 +354,7 @@ own work or for things noticed along the way.
 
 - `cm`: commit, and optionally push, open a PR or merge (`/cm [all] [push] [pr] [auto] [merge]`).
 - `handover`: write a session handover, or resume from one (`/handover [resume]`).
+- `sync-templates`: offer each templates change since the last sync (`docs/templates-sync.md`) and apply the accepted ones (`/sync-templates`).
 - `setup-machine`: take a bare clone on a new machine to a working `just dev`.
 - `tickets`: GitHub Issues tickets, created only when the user asks (only if the repo uses them).
 ````
@@ -368,6 +369,7 @@ own work or for things noticed along the way.
 - [ ] `.claude/hooks/` with the standard hooks that apply to the repo, and `test-hooks.sh` passing
 - [ ] `.mcp.json` with no secrets, and `.claude/mcp-env.sh` if a server needs one
 - [ ] `.gitignore` covers `.claude/settings.local.json`, `.claude/worktrees/` and `worktrees/`
-- [ ] Skills written: `cm`, `handover`, `setup-machine`, and `tickets` if GitHub Issues was chosen
+- [ ] Skills written: `cm`, `handover`, `sync-templates`, `setup-machine`, and `tickets` if GitHub Issues was chosen
+- [ ] `docs/templates-sync.md` records the templates commit the repo was built from
 - [ ] Task tracker chosen and named in `AGENTS.md`
 - [ ] `docs/superpowers/specs/` and `docs/superpowers/plans/` exist

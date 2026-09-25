@@ -8,12 +8,15 @@ agent setting up a new repo can write it at
 The short version: **`cm` commits only this session's work as Conventional
 Commits under the user's name, then pushes, opens a PR or merges on request.
 `handover` writes a one-page state of the work that the next session checks
-against git before trusting it.**
+against git before trusting it. `sync-templates` walks through what changed
+in the templates since the repo last synced, asks about each change, and
+applies the accepted ones to the repo's own docs, setup and code.**
 
 | Skill      | Invoked as                          | Job                                                     |
 | ---------- | ----------------------------------- | ------------------------------------------------------- |
 | `cm`       | `/cm [all] [push] [pr] [auto] [merge]` | Commit the session's work, and optionally push, PR or merge |
 | `handover` | `/handover [resume] [theme]`        | Write a session handover document, or resume from one   |
+| `sync-templates` | `/sync-templates`             | Offer each template change since the last sync, and apply the accepted ones |
 
 When writing each skill:
 
@@ -208,12 +211,107 @@ on another machine.
 
 ---
 
-## 3. Bootstrapping a new repo: checklist
+## 3. `sync-templates`: bring template changes into the repo
+
+**Triggers:** the user types `/sync-templates`, or asks to sync, update or
+check the repo against the templates.
+
+The templates (`petr-nazarov/templates-prompts`) keep changing after a repo is
+created from them. This skill finds what changed since the repo last synced,
+asks the user about each change, and applies the accepted ones to **this
+repo's** docs, agent setup, skills and code.
+
+### 3.1 The sync record
+
+Every repo has `docs/templates-sync.md`, written at bootstrap (`new-repo.md`)
+and updated by every sync. It is the repo's memory of the templates:
+
+```markdown
+# Templates sync
+
+Synced with templates-prompts at `<full sha>` on <YYYY-MM-DD>.
+
+| Templates sha | Change | Decision | Reason |
+|---|---|---|---|
+| `c17c2ee` | architecture: layered architecture, DI and base classes are chosen at setup | applied | |
+| `c17c2ee` | tools: husky + commitlint hooks | declined | Python-only repo, no package.json |
+
+## Offered again next sync
+
+- `c17c2ee` observability: logs to both a console and rotating JSON Lines files
+```
+
+- The sha is the templates commit the repo now matches.
+- Every decision stays in the table. A declined change is a recorded
+  departure, and the skill doesn't offer it again unless that part of the
+  template changes again later.
+
+### 3.2 Required behaviour
+
+- **Get the templates.** Use `~/Projects/Personal/templates-prompts` if it
+  exists (`git pull --ff-only` first), otherwise clone it into a scratch
+  folder. Never edit the templates from here.
+- **Find the changes.** `git -C <templates> log --oneline <synced sha>..HEAD`
+  and `git diff <synced sha>..HEAD`, plus every change listed under "Offered
+  again next sync".
+  - No sync record (a repo created before this skill existed): say so, and
+    offer to compare the repo with the current templates file by file
+    instead, the way `new-repo.md` audits an existing repo.
+  - The sha is unknown to the templates repo (rewritten history): stop and
+    ask which commit to compare from.
+  - Nothing changed: say the repo is up to date and stop.
+- **Split the diff into changes a person can decide on.** One change is one
+  rule, tool, pattern or template section (a new required tool, a rewritten
+  logging rule, a new skill), not one diff hunk. Group hunks that belong to
+  the same idea, and ignore wording-only edits unless they change meaning.
+- **Drop what doesn't apply.** Changes to sections this repo doesn't use (the
+  mobile section in a web-only repo, `docker.md` in a repo with no image) and
+  changes the table already declined are listed in one line at the end, not
+  asked about.
+- **Ask about each remaining change**, a few per `AskUserQuestion` call,
+  never one question for everything. Each question says:
+  - what changed in the templates, in one or two sentences, with the
+    templates commit;
+  - what applying it would change **in this repo** (files, code, config);
+  - a recommendation for this repo.
+
+  Options: **Apply**, **Decline** (asks for a one-line reason), **Later**
+  (not recorded, so it's offered again next time).
+- **Apply the accepted changes** to the repo's own copies, never by pasting
+  the template over them. The repo's docs have been adapted (sections
+  deleted, settings filled in, departures noted), and those adaptations stay.
+  - Docs: update the matching section of `docs/<file>.md` and its
+    cross-references.
+  - `AGENTS.md`, `.claude/`, skills: update them the same way. If a required
+    skill changed, rewrite the repo's skill from the new description.
+  - A change to the repo's architecture or tooling (a new required tool, a
+    pattern choice): make the change in the code and config too, or, if it's
+    more than a small edit, record it as a task in the reply and say it
+    wasn't applied to the code yet. Don't create a ticket unless the user
+    asks.
+  - A declined change that contradicts the repo's docs gets the departure
+    noted in that doc, with the reason.
+- **Verify.** Run `just lint` and `just test` after code or config changes.
+  Check that no placeholder or broken `§` reference was introduced.
+- **Record and commit.** Add every Apply and Decline to the table, set the
+  synced sha to the templates `HEAD` that was reviewed, and commit as
+  `docs: sync templates to <short sha>` (code changes in their own commits,
+  with their own types). If the user chose Later for some changes, the sha
+  still moves forward, and the Later changes are listed in the record under
+  "Offered again next sync", so they aren't lost.
+- **Report**: what was applied, declined and postponed, what still needs
+  work in the code, and the new synced sha.
+
+---
+
+## 4. Bootstrapping a new repo: checklist
 
 - [ ] Write `.claude/skills/cm/SKILL.md` from §1, adapted to the repo's default
   branch and commit scopes.
 - [ ] Write `.claude/skills/handover/SKILL.md` from §2, and create
   `docs/handover/` with a `.gitkeep`.
-- [ ] Check that both skills show up in Claude Code in this repo, and that
-  `/cm` and `/handover` trigger them.
-- [ ] Commit: `chore(skills): add cm and handover skills`.
+- [ ] Write `.claude/skills/sync-templates/SKILL.md` from §3, and create
+  `docs/templates-sync.md` with the templates sha the repo was built from.
+- [ ] Check that all three skills show up in Claude Code in this repo, and that
+  `/cm`, `/handover` and `/sync-templates` trigger them.
+- [ ] Commit: `chore(skills): add cm, handover and sync-templates skills`.
