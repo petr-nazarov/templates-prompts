@@ -59,7 +59,10 @@ user still has to do.**
 
 Ask everything at once (`AskUserQuestion`, several questions per call).
 Skip any question whose answer the prompt or the existing repo already
-gives, and say what was inferred.
+gives, and say what was inferred. The architecture questions are the
+exception: always ask them when the repo has application code (a NestJS
+choice answers the first two), and give a recommendation for this project
+with each.
 
 | Question | Options | Decides |
 | -------- | ------- | ------- |
@@ -67,6 +70,9 @@ gives, and say what was inferred.
 | Kind | web app, API, full-stack, mobile, static site, CLI or library, infra only | which apps and docs apply |
 | Languages | TypeScript, Python, both | tool sections, linters, Dockerfile |
 | Layout | single package, monorepo (pnpm + Turborepo, or uv workspaces) | folder map |
+| Layered architecture (controller → service → repository)? | yes, no (see `architectural-decisions.md` §0 for when each fits) | `architecture.md` §1, folder layout |
+| Dependency injection? | yes, no | `architecture.md` §2, how tests stub |
+| Base repository, service and controller classes? | yes, no. Ask only if layered is yes | `architecture.md` §4 |
 | Auth | none, Better Auth (self-hosted), Descope (managed) | `pre-selected-tools.md` §5 |
 | Task tracker | GitHub Issues (preferred), `tasks/<topic>.md` | `tickets` skill or `tasks/` |
 | GitHub | owner/name, public or private, create it now or later | remote, CI, GHCR |
@@ -78,7 +84,7 @@ gives, and say what was inferred.
 | Template | Condition | Becomes in the new repo |
 | -------- | --------- | ----------------------- |
 | `pre-selected-tools.md` | always | `docs/tools.md`, sections for other stacks deleted |
-| `architectural-decisions.md` | the repo has application code | `docs/architecture.md` |
+| `architectural-decisions.md` | the repo has application code | `docs/architecture.md`, with the §0 answers recorded and each "no" section cut down to its "Without…" rule |
 | `testing.md` | the repo has code | `docs/testing.md` |
 | `observability.md` | the repo runs a service | `docs/observability.md` |
 | `release-deploy.md` | always (releases); deploy parts if it deploys | `docs/release-deploy.md`, **Project settings** filled |

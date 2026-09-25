@@ -297,7 +297,7 @@ Tool versions are pinned in `mise.toml`. Every command goes through `just`.
 ## Conventions
 
 - Tools: [docs/tools.md](docs/tools.md)
-- Architecture: [docs/architecture.md](docs/architecture.md)
+- Architecture: [docs/architecture.md](docs/architecture.md). Layered: <yes|no>. DI: <yes|no>. Base classes: <yes|no|n/a>.
 - Commits, releases and deploys: [docs/release-deploy.md](docs/release-deploy.md)
 - Docker: [docs/docker.md](docs/docker.md)
 - Testing: [docs/testing.md](docs/testing.md)

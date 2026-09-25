@@ -49,7 +49,7 @@ what's left for you (secrets, logins, GitHub settings).
 | File | What it covers | Becomes |
 |---|---|---|
 | [`pre-selected-tools.md`](pre-selected-tools.md) | The default toolbox by area (every repo, JS/TS, frontend, backend, auth, mobile, Python, infra, AI), with required vs. suggested tools and what each replaces. | `docs/tools.md` |
-| [`architectural-decisions.md`](architectural-decisions.md) | Architecture patterns: controller → service → repository, DI, schemas as contracts, error codes, request context, ADRs. | `docs/architecture.md` |
+| [`architectural-decisions.md`](architectural-decisions.md) | Architecture patterns: the layered architecture (controller → service → repository), DI and base classes, each chosen at setup; plus schemas as contracts, error codes, request context and ADRs for every project. | `docs/architecture.md` |
 | [`testing.md`](testing.md) | Test types, writing rules ("should" names, AAA, unhappy paths), real dependencies via Testcontainers, CI enforcement, mutation testing. | `docs/testing.md` |
 | [`observability.md`](observability.md) | Logging to both a readable console and rotating ECS JSON Lines files, request IDs, redaction, access logs and retention, monitoring, health and uptime checks. | `docs/observability.md` |
 | [`release-deploy.md`](release-deploy.md) | Commits, the changelog, releases and prereleases, CI/CD and deployment. | `docs/release-deploy.md` |
