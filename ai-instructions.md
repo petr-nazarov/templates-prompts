@@ -263,16 +263,22 @@ goes in exactly one place:
 | Detail about one area (a domain, a service, a tool) | `docs/<area>.md`, linked from `AGENTS.md` |
 | A decision with trade-offs | An ADR (see `architectural-decisions.md` §20) |
 | A design or plan for a feature | `docs/superpowers/specs/` or `docs/superpowers/plans/` |
-| Work that was deferred, a bug found, a follow-up | The repo's task tracker, chosen when the repo is created (see below) |
 | A procedure that repeats | A skill in `.claude/skills/` |
+| A bug found, a follow-up, work left for later | **The agent's reply** (or the handover). Never a ticket unless the user asks for one |
 
-**Task tracker.** When a repo is created, the user picks one of these, and
-`AGENTS.md` states which. Only the chosen one is used.
+**Task tracker.** Tickets are created **only when the user explicitly asks**
+for one, for example to ask something of someone, or to remember to do
+something. Never open a ticket for the agent's own work: not per task, per
+iteration, per plan step, or for something noticed along the way. Mention
+those in the reply instead; the user decides whether they become a ticket.
+
+When a repo is created, the user picks one tracker, and `AGENTS.md` states
+which. Only the chosen one is used.
 
 - **GitHub Issues (preferred):** set up from `ticketing.md`. Use it whenever
   the repo has a GitHub remote.
-- **`tasks/<topic>.md` files:** one file per piece of deferred work, deleted
-  when it's done. For repos without GitHub, or when the user prefers tasks in
+- **`tasks/<topic>.md` files:** one file per task the user asked to track,
+  deleted when it's done. For repos without GitHub, or when the user prefers tasks in
   the repo.
 
 - Write it down the same day, while it's fresh.
@@ -327,6 +333,8 @@ Tool versions are pinned in `mise.toml`. Every command goes through `just`.
 - <Rule.> Why: <reason>.
 - Never commit `.env` files, secrets or real customer data. Why: the repo is
   shared and history is permanent.
+- Never create a ticket unless the user asks for one. Why: tickets are the
+  user's list of asks and reminders, not a log of the agent's work.
 - Commit messages follow Conventional Commits, and releases follow Semantic
   Versioning. Why: the changelog, release notes and version bumps are
   generated from the commit history.
@@ -339,13 +347,15 @@ Tool versions are pinned in `mise.toml`. Every command goes through `just`.
 <Section 3 of ai-instructions.md, adapted to this repo.>
 
 Task tracker: <GitHub Issues (see the `tickets` skill) | `tasks/<topic>.md`>.
+Tickets are created only when the user asks for one, never for the agent's
+own work or for things noticed along the way.
 
 ## Skills
 
 - `cm`: commit, and optionally push, open a PR or merge (`/cm [all] [push] [pr] [auto] [merge]`).
 - `handover`: write a session handover, or resume from one (`/handover [resume]`).
 - `setup-machine`: take a bare clone on a new machine to a working `just dev`.
-- `tickets`: GitHub Issues tickets (only if the repo uses them).
+- `tickets`: GitHub Issues tickets, created only when the user asks (only if the repo uses them).
 ````
 
 ---

@@ -62,7 +62,7 @@ what's left for you (secrets, logins, GitHub settings).
 | [`ai-instructions.md`](ai-instructions.md) | Claude Code setup: `AGENTS.md` + `CLAUDE.md` symlink, committed settings with Superpowers, hooks, `.mcp.json` without secrets, worktrees, where new knowledge goes, and an `AGENTS.md` template. | `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.mcp.json` |
 | [`required-skills.md`](required-skills.md) | What the `cm` (commit, push, PR, merge) and `handover` skills must do. | `.claude/skills/cm/`, `.claude/skills/handover/` |
 | [`setup-machine-skill.md`](setup-machine-skill.md) | How to write the repo's `setup-machine` skill: bare clone to a working `just dev`, with the user doing every login. | `.claude/skills/setup-machine/` |
-| [`ticketing.md`](ticketing.md) | GitHub Issues ticketing: the `tickets` skill, issue template, account-check script, labels and status flow. Only when GitHub Issues is the chosen tracker. | `.claude/skills/tickets/` |
+| [`ticketing.md`](ticketing.md) | GitHub Issues ticketing: the `tickets` skill, issue template, account-check script, labels and status flow. Tickets are created only when the user asks for one. Only when GitHub Issues is the chosen tracker. | `.claude/skills/tickets/` |
 
 **Copied as is**
 

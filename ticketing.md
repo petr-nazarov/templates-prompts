@@ -9,9 +9,16 @@ This is the preferred task tracker. The alternative, `tasks/<topic>.md`
 files, is chosen when the repo is created (see `ai-instructions.md`, "Where
 knowledge goes"). Set this up only if GitHub Issues was chosen.
 
-The short version: **an issue's body is its current truth and its comments are
-its history. Status lives in labels, and commits close issues with
-`Fixes #N`.**
+The short version: **a ticket is created only when the user asks for one. Its
+body is its current truth and its comments are its history. Status lives in
+labels, and commits close issues with `Fixes #N`.**
+
+**When tickets exist.** Tickets are the user's asks and reminders: something
+wanted from someone (a design decision, a client's answer), or something the
+user wants to remember to do. They are created **only when the user
+explicitly asks**. An agent never opens one for its own work: not per task,
+per iteration or per plan step, and not for a bug or follow-up it noticed.
+It mentions those in its reply, and the user decides.
 
 ```
  "we need a ticket"  ──▶  duplicate check ──▶  facts + screenshots ──▶  gh issue create (status: todo | blocked)
@@ -54,7 +61,7 @@ Replace `<owner>/<repo>`, `<Project>` and the area list in all three files.
 ````markdown
 ---
 name: tickets
-description: Use when the user says we need a ticket (including a design ticket asking for a design decision or confirmation), or asks to file, open, create, update, re-status, block, or close a ticket or issue for <Project>, or when work just finished belongs to an existing ticket. Tickets are GitHub Issues on <owner>/<repo>, managed with the gh CLI.
+description: Use only when the user explicitly asks for a ticket (for example "we need a ticket", "make a ticket so I remember", a design ticket asking for a decision), or asks to update, re-status, block or close a specific ticket or issue for <Project>, or asked for work on a named ticket (#N). Never use it to open tickets on your own initiative. Tickets are GitHub Issues on <owner>/<repo>, managed with the gh CLI.
 ---
 
 # Tickets (GitHub Issues)
@@ -62,6 +69,12 @@ description: Use when the user says we need a ticket (including a design ticket 
 <Project>'s tickets are **GitHub Issues** on `<owner>/<repo>`, driven through
 the `gh` CLI. This skill covers creating them, keeping them true as work
 happens, moving their status, and closing them.
+
+**Only create a ticket when the user asks for one.** Tickets are the user's
+asks of other people and reminders to themselves, not a log of your work.
+Never open one per task, iteration or plan step, or for a bug or follow-up
+you noticed: say it in your reply, and the user decides whether it becomes
+a ticket.
 
 ## 0. Always first: act as the right account
 
@@ -263,8 +276,9 @@ A ticket's body is its **current truth**. Its comments are its **history**.
   when it reaches `main`.
 - **PR opened**: set status to `in review` and link the PR under Links.
 
-When a session finishes work that belongs to an open ticket, update that
-ticket before reporting done, whether or not the user asked for it.
+When the user asked for work on a ticket (#N), update that ticket before
+reporting done. Don't go looking for other tickets to update, and don't
+comment on a ticket for work the user didn't tie to it.
 
 ## 4. Closing
 
@@ -294,6 +308,7 @@ giving the reason or the duplicate's number. To reopen, run
 | Linking screenshots by branch name | Link by commit SHA |
 | A ticket about a screen with no screenshot of it | Take one from the running app, or say under Evidence why you couldn't |
 | A design ticket that decides the design itself | Put the options and a recommendation under Decisions, and let design choose |
+| Opening a ticket nobody asked for (per task, per step, for a follow-up) | Don't. Mention it in the reply; the user decides |
 ````
 
 ---
