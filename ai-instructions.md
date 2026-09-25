@@ -278,8 +278,21 @@ which. Only the chosen one is used.
 - **GitHub Issues (preferred):** set up from `ticketing.md`. Use it whenever
   the repo has a GitHub remote.
 - **`tasks/<topic>.md` files:** one file per task the user asked to track,
-  deleted when it's done. For repos without GitHub, or when the user prefers tasks in
-  the repo.
+  deleted when it's done. For repos without GitHub, or when the user prefers
+  tasks in the repo.
+
+**`TODO.md`.** A repo may have a `TODO.md` that the user writes, whichever
+tracker it uses. When the user asks for items from it to be done:
+
+- Once an item is done and verified, move it, as written, under an
+  `# Implemented` heading at the end of the file. Create the heading the
+  first time.
+- If only part of an item was done, move the done part and leave the rest
+  in place, reworded only as much as it needs to still make sense.
+- Leave everything else exactly where and how it is: items that weren't
+  asked for, and items that aren't finished. Don't reorder, reword, tick or
+  delete them.
+- Never add items to `TODO.md` yourself. Follow-ups go in the reply.
 
 - Write it down the same day, while it's fresh.
 - Date lessons that depend on outside behaviour: `(seen 2026-09-25)`.
@@ -349,6 +362,8 @@ Tool versions are pinned in `mise.toml`. Every command goes through `just`.
 Task tracker: <GitHub Issues (see the `tickets` skill) | `tasks/<topic>.md`>.
 Tickets are created only when the user asks for one, never for the agent's
 own work or for things noticed along the way.
+When an item from `TODO.md` is done, move it under `# Implemented` at the end
+of the file, and leave the unfinished parts where they are.
 
 ## Skills
 
