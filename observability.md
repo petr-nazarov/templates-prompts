@@ -39,7 +39,22 @@ CI, staging, production):
 - **Libraries:**
   - Node: pino with two transport targets, `pino-pretty` to stdout and
     `pino-roll` to the file, and `@elastic/ecs-pino-format` for the ECS
-    fields (`nestjs-pino` in Nest).
+    fields (`nestjs-pino` in Nest). Gotchas (seen 2026-09-25, pino 10,
+    pino-roll 4.0.0):
+    - The transport worker routes each line to its targets by the numeric
+      `level` field, which the ECS level formatter replaces with `log.level`.
+      With more than one target, **nothing is written** unless the formatter
+      returns both: `level: (label, n) => ({ "log.level": label, level: n })`.
+    - pino-roll ignores its `extension` option: name the file `app.jsonl`,
+      and it rotates as `app.1.jsonl`, `app.2.jsonl`, and so on.
+    - A `mixin` is merged shallowly: a log call with its own `http` field
+      drops `http.request.id` from the context. Set a deep-merging
+      `mixinMergeStrategy`.
+    - `pino.transport` resolves targets relative to the file that calls it,
+      so build the logger in the app, not in a script outside the package.
+    - Test it for real: log through the real transports into a temp dir
+      (a file path as pino-pretty's `destination` captures the console) and
+      read both outputs back.
   - Python: stdlib `logging` with a `StreamHandler` (a coloured formatter)
     and a `RotatingFileHandler` using `ecs-logging`'s `StdlibFormatter`, both
     behind a `QueueHandler` (structlog can render both the same way).

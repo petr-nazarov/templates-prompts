@@ -65,7 +65,8 @@ Fill these in once per repository; everything below refers to them by name.
 just = "1"
 git-cliff = "2"
 node = "24"          # Node projects
-pnpm = "12"
+"github:pnpm/pnpm" = "12.6.0"  # not aqua or npm:, see pre-selected-tools.md §1
+gitleaks = "8"
 biome = "2"
 python = "3.14"      # Python projects
 uv = "0.12"
@@ -163,6 +164,7 @@ tag_pattern = "^v[0-9]+\\.[0-9]+\\.[0-9]+"
 sort_commits = "oldest"
 commit_parsers = [
   { message = "^chore\\(release\\)", skip = true },
+  { message = "^docs\\(changelog\\)", skip = true },  # CI's own changelog commits
   { field = "breaking", pattern = "true", group = "<!-- 0 -->Breaking changes" },
   { message = "^feat", group = "<!-- 1 -->Features" },
   { message = "^fix", group = "<!-- 2 -->Bug fixes" },
@@ -336,7 +338,10 @@ Two workflows, each with one job and a clear trigger contract. Both start with
   `cancel-in-progress: false` (never abort a half-done changelog commit).
 - Always check out **`ref: main`** with `fetch-depth: 0`, even on a tag push, so
   the tag run still updates the branch and git-cliff sees every tag.
-- `just changelog` → commit only if changed, as `github-actions[bot]`
+- `just changelog` → commit only if changed (test with
+  `git status --porcelain -- CHANGELOG.md`, not `git diff --quiet`, which
+  ignores the first, still untracked, `CHANGELOG.md`), as
+  `docs(changelog): update changelog` by `github-actions[bot]`
   (`41898282+github-actions[bot]@users.noreply.github.com`) → `git push origin HEAD:main`.
 - **On a tag, publish the GitHub release.** A pushed tag is *not* a release:
   GitHub shows it with an empty body until something creates one.
@@ -376,7 +381,10 @@ Two workflows, each with one job and a clear trigger contract. Both start with
   stable tag yields `X.Y.Z, X.Y, latest, sha-…` and a prerelease yields
   `X.Y.Z-rc.N, next, sha-…`.
 - **Smoke test the actual image before pushing it:** build single-arch with
-  `load: true`, `docker run` it, poll the health path, then `curl` the key
+  `load: true`, `docker run` it (with the services it needs at startup, such
+  as a Postgres, and its migrations run from the image, in one
+  `scripts/image-smoke.sh` shared with `just image-smoke`), poll the health
+  path, then `curl` the key
   behaviours users depend on (status codes, content types, a 404). Add a
   negative assertion when you remove something. Dump `docker logs` in an
   `if: always()` step.

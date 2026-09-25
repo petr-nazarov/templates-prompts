@@ -28,9 +28,12 @@ user still has to do.**
   a login the user has to run, or a fact nobody could have known up front.
 - **Adapt, don't paste.** Copied docs lose the sections that don't apply and
   get their **Project settings** filled in. Generic examples in the docs
-  (`<service>:<port>`) stay as they are, but no placeholder survives in
-  `AGENTS.md`, the Project settings tables or `.claude/`:
-  `grep -rnE '<[a-z][a-z_ -]*>' AGENTS.md .claude` finds nothing.
+  (`<service>:<port>`), path patterns (`docs/<area>.md`) and the placeholders
+  a skill fills in at run time (`<key words>`, `<sha>`) stay as they are. No
+  *template* placeholder survives in `AGENTS.md`, the Project settings tables
+  or `.claude/`: `grep -rnE '<(Project|owner|One paragraph|what it|Rule\.|reason>|Anything this|Say which|yes\|no|GitHub Issues \|)' AGENTS.md .claude`
+  finds nothing, and every Project settings table holds real values or
+  "none yet".
 - **Bullet lists only, never numbered lists**, in everything written.
 - **Commits** follow Conventional Commits, one commit per step in §4, under
   the user's git identity, with no AI attribution of any kind (no

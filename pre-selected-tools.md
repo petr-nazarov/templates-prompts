@@ -40,8 +40,12 @@ A typical `mise.toml`:
 [tools]
 just = "latest"
 node = "lts"
-pnpm = "latest"
+# pnpm from its GitHub release: the aqua registry entry had no linux asset for
+# pnpm 12 in mise 2026.3, and "npm:pnpm" breaks in CI (pnpm 12's npm package
+# replaces itself with a native binary in a postinstall script mise skips).
+"github:pnpm/pnpm" = "latest"
 uv = "latest"
+gitleaks = "latest"  # the pre-commit hook and CI use it
 ```
 
 ---
@@ -50,9 +54,9 @@ uv = "latest"
 
 | Tool | Status | Use it for | Instead of |
 |---|---|---|---|
-| [pnpm](https://pnpm.io) | Required | Package manager and workspaces (`pnpm-workspace.yaml`). | npm, yarn, bun |
+| [pnpm](https://pnpm.io) | Required | Package manager and workspaces (`pnpm-workspace.yaml`). pnpm 12 runs no dependency build scripts until they're approved: list them under `allowBuilds` in `pnpm-workspace.yaml` (`esbuild: true` for tsx and Vite, `false` for optional native add-ons). It also holds back packages published in the last day, and `pnpm add` of one writes a `minimumReleaseAgeExclude` entry; review those. | npm, yarn, bun |
 | [Biome](https://biomejs.dev) | Required | Lint and format in one tool (`biome check`, `biome check --write`). | ESLint + Prettier, lint-staged setups |
-| [husky](https://typicode.github.io/husky) + [commitlint](https://commitlint.js.org) | Required | Git hooks, committed in `.husky/`: `commit-msg` runs `commitlint --edit "$1"` (`@commitlint/config-conventional`), so every commit is a Conventional Commit, and `pre-commit` runs `biome check --staged` and `gitleaks git --staged`. Installed by the `prepare` script on `pnpm install`. CI runs commitlint on PR commits too, since hooks can be skipped. | Unchecked commit messages, lint-staged, pre-commit (Python framework) |
+| [husky](https://typicode.github.io/husky) + [commitlint](https://commitlint.js.org) | Required | Git hooks, committed in `.husky/`: `commit-msg` runs `commitlint --edit "$1"` (`@commitlint/config-conventional`), so every commit is a Conventional Commit, and `pre-commit` runs `biome check --staged` and `gitleaks git --staged`. Installed by the `prepare` script on `pnpm install`. CI runs commitlint on PR commits too, since hooks can be skipped. See the hook notes below the table. | Unchecked commit messages, lint-staged, pre-commit (Python framework) |
 | TypeScript | Suggested | All JS code, with `strict` on. | Plain JS |
 | Node.js LTS | Suggested | Runtime, pinned by mise. Use `node:<lts>-alpine` in Dockerfiles. | — |
 | [Vite](https://vite.dev) | Suggested | Dev server and bundler for SPAs. | webpack, CRA |
@@ -63,6 +67,16 @@ uv = "latest"
 | [Stryker](https://stryker-mutator.io) | Suggested | Periodic mutation testing of critical modules (money, auth). See `testing.md`. | Coverage percentage targets |
 | [Turborepo](https://turbo.build) | Suggested | Only for monorepos with several apps and libs. | nx, lerna |
 | [Zod](https://zod.dev) | Suggested | Runtime validation and shared contracts between client and server. | joi, yup, class-validator for new code |
+
+**Git hook notes** (seen 2026-09-25):
+
+- Git runs hooks in a shell that hasn't activated mise, so `gitleaks` or the
+  pinned pnpm may be missing. Run tools through
+  `run() { if command -v mise >/dev/null 2>&1; then mise exec -- "$@"; else "$@"; fi; }`.
+- husky sets a *local* `core.hooksPath`, which hides a global one (for
+  example a global `commit-msg` that strips AI trailers). Chain it at the top
+  of `.husky/commit-msg`:
+  `g=$(git config --global --path core.hooksPath); [ -x "$g/commit-msg" ] && "$g/commit-msg" "$1"`.
 
 ---
 
@@ -111,6 +125,27 @@ Pick **one** per project:
 |---|---|---|---|
 | [Better Auth](https://better-auth.com) | Required (self-hosted) | The app owns its users in its own Postgres. Pairs with Drizzle, and `just db-generate` regenerates its schema. | Passport + JWT, Lucia, Auth.js |
 | [Descope](https://descope.com) | Required (managed) | The client wants a hosted identity provider (flows, SSO, passkeys, OTP) and doesn't want to run it themselves. SDKs exist for JS and Python. | Auth0, Clerk, Cognito, Firebase Auth |
+
+**Better Auth as an MCP server's OAuth server** (seen 2026-09-25, better-auth
+1.7): MCP clients (Claude Code, claude.ai connectors, the Claude apps) need
+dynamic client registration, PKCE and tokens bound to the `/mcp` resource.
+
+- Use `@better-auth/mcp` with the `jwt()` plugin. better-auth 1.7 no longer
+  ships the old built-in `mcp` plugin. `requireMcpAuth` guards `/mcp` and
+  sends the `WWW-Authenticate` challenge. Route `/.well-known/*` to
+  `auth.handler`.
+- Claude Code registers `http://localhost:<port>/callback` without
+  `application_type`, which the provider rejects as a web client. A `before`
+  hook on `/oauth2/register` sets `application_type: "native"` for loopback
+  redirect URIs.
+- The schema CLI is the `auth` package (`better-auth generate --adapter
+  drizzle --dialect postgresql`), not `@better-auth/cli`. Point it at a config
+  built without a database.
+- The plugin writes to the database when it starts, so the app needs its
+  database even to answer `/health`. Image smoke tests run a Postgres next to
+  it (`docker.md` §4).
+- Restrict sign-in with `user.validateUserInfo`. It sees the provider profile
+  (the GitHub `login`) and runs on every sign-in, not only sign-up.
 
 Better Auth and Descope are for the app's own users. Authelia (§8)
 guards internal tools. It isn't an app auth library.
@@ -162,6 +197,7 @@ guards internal tools. It isn't an app auth library.
 | Tool | Status | Use it for | Instead of |
 |---|---|---|---|
 | [Claude Code](https://claude.com/claude-code) | Required | The coding agent. Every repo has an `AGENTS.md`, with `CLAUDE.md` symlinked to it, that describes commands (`just …`), conventions and this tool list. | — |
+| [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk) + `@hono/mcp` | Suggested | Remote MCP servers: Streamable HTTP on `/mcp`, stateless (a new server and transport per request), OAuth through Better Auth (§5). | Hand-rolled JSON-RPC, SSE-only servers |
 | [Superpowers](https://github.com/obra/superpowers) | Required | Claude Code skills for the working process: brainstorm → spec → plan → TDD → review. Specs and plans go in `docs/superpowers/`. | Ad-hoc prompting |
 
 ---

@@ -32,7 +32,12 @@ and deployed by pulling, never by building on the server.**
 - Build and runtime stages use the **same base family and version**, so
   native modules compiled in one run in the other.
 - Base image updates come from Renovate or Dependabot PRs, not from manual
-  bumps.
+  bumps. Ignore `node` majors there (`update-types:
+  [version-update:semver-major]`), or Dependabot proposes the odd, non-LTS
+  ones. Node majors move by hand, between LTS lines.
+- `apk add` without versions trips hadolint's DL3018. The pinned base image
+  pins the package set, so add `# hadolint ignore=DL3018` above that `RUN`
+  rather than pinning versions that vanish from the Alpine mirrors.
 
 ## 2. Dockerfile rules
 
@@ -100,8 +105,10 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 CMD ["node", "dist/server.js"]
 ```
 
-In a pnpm monorepo, build one app with `pnpm deploy --filter <app> --prod /out`
-in the build stage and copy `/out` into the final stage.
+In a pnpm monorepo, build one app with
+`pnpm --filter <app> deploy --legacy --prod /out` in the build stage and copy
+`/out` into the final stage (pnpm 10+ needs `--legacy`, or
+`injectWorkspacePackages: true`, to deploy a workspace package).
 
 ### Python (uv, Alpine)
 
@@ -257,11 +264,19 @@ image:
 image-smoke: image
     #!/usr/bin/env bash
     set -euo pipefail
-    id=$(docker run -d --rm -p {{PORT}}:{{PORT}} {{IMAGE}}:dev)
-    trap 'docker logs "$id"; docker stop "$id" >/dev/null' EXIT
+    id=$(docker run -d -p {{PORT}}:{{PORT}} {{IMAGE}}:dev)
+    trap 'docker logs "$id"; docker rm -f "$id" >/dev/null' EXIT
     for _ in $(seq 30); do curl -fsS localhost:{{PORT}}/health && exit 0; sleep 1; done
     exit 1
 ```
+
+- Don't `--rm` the container: when the app dies at startup, `--rm` deletes it
+  before `docker logs` can show why.
+- An app that needs a service at startup (Better Auth, for example, writes
+  to its database on boot) is smoke-tested beside it: put the recipe in
+  `scripts/image-smoke.sh`. It starts a network, a throwaway Postgres, runs
+  the migrations with the image, then the app, and checks `/health` plus a
+  key behaviour. CI's image workflow calls the same script.
 
 ## 5. Storing images (GHCR)
 

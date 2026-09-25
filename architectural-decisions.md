@@ -78,6 +78,8 @@ class CatsService {
 - A container does the wiring: NestJS modules in apps, `tsyringe` without a
   framework.
 - Tests register stubs in the container.
+- `tsyringe` won't load without `import "reflect-metadata"` at the entry
+  point, even when every registration is a factory and no decorator is used.
 
 **Without DI** (when the answer is "no"):
 

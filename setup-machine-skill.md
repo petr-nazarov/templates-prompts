@@ -39,7 +39,12 @@ silently.**
   - **Local default**: copy the example value (`localhost` URLs, the dev
     database from `compose.yaml`).
   - **Generated**: create a random value locally (`openssl rand -hex 32`) for
-    session secrets, signing keys and local passwords.
+    session secrets, signing keys and local passwords. A script does this
+    (`scripts/setup-env.sh`, run by `just setup`): the `secrets.sh` hook
+    stops the agent from writing `.env`, and the value should never pass
+    through the agent anyway. The script copies `.env.example`, fills the
+    empty generated values, never overwrites one, and exits non-zero listing
+    what the user still has to provide.
   - **From the user**: an external secret (API key, OAuth client). Tell the
     user where to get it and ask them to paste it into the file themselves.
     Never print a secret's value in chat or logs.

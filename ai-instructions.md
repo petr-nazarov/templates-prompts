@@ -131,6 +131,15 @@ The standard set, keeping only what applies to the repo:
   code 2**, and its stderr is shown to the agent as the reason. Exit code 1
   does *not* block.
 - Every block message says what to do instead ("use `pnpm add`").
+- **Match commands, not text.** A Bash command can carry file contents in a
+  heredoc (`cat > Dockerfile <<EOF … npm install … EOF`), and a hook that
+  greps the whole command blocks writing any file that *mentions* a banned
+  command. Strip heredoc bodies before matching (`strip-heredocs.pl` below),
+  and have `ai-attribution.sh` read only from the `git commit` / `gh pr`
+  call onwards, plus any `-F` / `--body-file` it names.
+- **Hooks have tests.** `.claude/hooks/test-hooks.sh` pipes sample tool
+  calls into each hook and checks the exit code, for commands that must be
+  blocked *and* ones that must pass (a heredoc that mentions `npm install`).
 - Layer boundaries (such as "no ORM outside `repositories/`") are enforced by
   lint, which covers humans too (see `architectural-decisions.md` §1).
   Don't duplicate them as hooks.
@@ -138,11 +147,20 @@ The standard set, keeping only what applies to the repo:
 ```bash
 #!/usr/bin/env bash
 # .claude/hooks/package-manager.sh: PreToolUse hook, matcher "Bash"
-cmd=$(jq -r '.tool_input.command // empty')
-if grep -qE '(^|[;&|[:space:]])(npm|yarn)[[:space:]]' <<<"$cmd"; then
-  echo "Blocked: this repo uses pnpm. Run the pnpm equivalent (pnpm add, pnpm install, pnpm run)." >&2
+# Heredoc bodies are file contents being written, not commands: drop them first.
+cmd=$(jq -r '.tool_input.command // empty' | perl "$(dirname "$0")/strip-heredocs.pl")
+if grep -qE '(^|[;&|[:space:]])(npm|yarn|bun)[[:space:]]+(i|install|add|ci|remove|run|exec)\b|(^|[;&|[:space:]])npx[[:space:]]' <<<"$cmd"; then
+  echo "Blocked: this repo uses pnpm. Run the pnpm equivalent (pnpm add, pnpm install, pnpm run, pnpm dlx)." >&2
   exit 2
 fi
+```
+
+```perl
+# .claude/hooks/strip-heredocs.pl: removes heredoc bodies from a shell command
+local $/;
+my $cmd = <STDIN>;
+$cmd =~ s/<<-?\s*['"]?(\w+)['"]?[^\n]*\n.*?\n\s*\1(?=\n|$)//sg;
+print $cmd;
 ```
 
 ```json
@@ -337,7 +355,7 @@ Task tracker: <GitHub Issues (see the `tickets` skill) | `tasks/<topic>.md`>.
 - [ ] `AGENTS.md` from §4, filled in and under about 150 lines
 - [ ] `CLAUDE.md` symlinked to it (`git ls-files -s CLAUDE.md` shows mode `120000`)
 - [ ] `.claude/settings.json`: Superpowers enabled, attribution off, permissions, hooks
-- [ ] `.claude/hooks/` with the standard hooks that apply to the repo
+- [ ] `.claude/hooks/` with the standard hooks that apply to the repo, and `test-hooks.sh` passing
 - [ ] `.mcp.json` with no secrets, and `.claude/mcp-env.sh` if a server needs one
 - [ ] `.gitignore` covers `.claude/settings.local.json`, `.claude/worktrees/` and `worktrees/`
 - [ ] Skills written: `cm`, `handover`, `setup-machine`, and `tickets` if GitHub Issues was chosen
