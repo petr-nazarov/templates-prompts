@@ -53,7 +53,7 @@ Fill these in once per repository; everything below refers to them by name.
 | Changelog & notes      | **git-cliff** (`cliff.toml`)                      |
 | Python env & packaging | **uv** (`pyproject.toml` + `uv.lock`)             |
 | Python lint & format   | **ruff**                                          |
-| Node package manager   | **pnpm** via corepack (`pnpm-lock.yaml`)          |
+| Node package manager   | **pnpm** (`pnpm-lock.yaml`); corepack in Dockerfiles |
 | JS/TS lint & format    | **biome** (`biome.json`)                          |
 | CI/CD                  | GitHub Actions (`jdx/mise-action` to install tools) |
 | Registry               | GHCR                                              |
@@ -81,6 +81,12 @@ Everyone (and CI) runs `mise install`; nothing is installed globally by hand.
   release notes and automatic version bumps are all derived from these subjects,
   so they are the *only* place release documentation is written.
 - **Description:** imperative, lowercase, no trailing period, ≤ 72 chars.
+- **Semantic Versioning.** Commit types drive the version: `fix` → patch,
+  `feat` → minor, breaking change → major (see §3).
+- **The user is the only author.** Commits are made under the user's git
+  identity, with no `Co-Authored-By:` trailer for an AI, no
+  `Claude-Session:` line and no "Generated with Claude Code" text, in commits
+  and PR bodies alike. Agents never pass `--author`.
 - **Body explains why**, wrapped at 72. The diff already shows what.
 - **Breaking changes:** `!` after the type/scope or a `BREAKING CHANGE:` footer.
   git-cliff promotes those to a "Breaking changes" group.
@@ -193,19 +199,19 @@ release-notes tag:
 
 `just release [bump] [pre]` is the entire ceremony. It:
 
-1. **Refuses** anything but `DEFAULT_BRANCH` and a clean working tree.
-2. **Catches up first:** `git fetch --tags`, fast-forwards to the remote branch,
-   bails if diverged. (CI's changelog commit otherwise makes the final push fail
-   every time.)
-3. **Computes the next version** from the newest tag (see the table in §4),
-   `auto` asks git-cliff to derive the bump from the commits since the last
-   stable release.
-4. **Refuses an existing tag.**
-5. Writes the version file(s), commits `chore(release): vX.Y.Z`, creates an
-   **annotated** tag.
-6. **One atomic push:** `git push --atomic origin main vX.Y.Z`. A rejected
-   branch must not leave a tag on the remote pointing at a commit nobody has.
-7. Prints what happens next.
+- **Refuses** anything but `DEFAULT_BRANCH` and a clean working tree.
+- **Catches up first:** `git fetch --tags`, fast-forwards to the remote branch,
+  bails if diverged. (CI's changelog commit otherwise makes the final push fail
+  every time.)
+- **Computes the next version** from the newest tag (see the table in §4),
+  `auto` asks git-cliff to derive the bump from the commits since the last
+  stable release.
+- **Refuses an existing tag.**
+- Writes the version file(s), commits `chore(release): vX.Y.Z`, creates an
+  **annotated** tag.
+- **One atomic push:** `git push --atomic origin main vX.Y.Z`. A rejected
+  branch must not leave a tag on the remote pointing at a commit nobody has.
+- Prints what happens next.
 
 Then **pull afterwards**: CI will have committed the changelog on top.
 
@@ -298,23 +304,23 @@ forwards.
 
 The flow:
 
-1. **Start:** `just release minor rc` → `v1.3.0-rc.1`.
-2. **CI treats any tag containing `-` as a prerelease:**
-   - GitHub release is created with `--prerelease` (never shown as "Latest").
-   - Image gets `1.3.0-rc.1` and the moving `next` tag, but **not** `X.Y` or
-     `latest`, so production (which follows `latest`) is untouched.
-   - Release notes: everything since the last stable tag.
-   - `CHANGELOG.md` keeps those changes under Unreleased.
-3. **Try it:** deploy to staging with `IMAGE_TAG=next just deploy` (or the
-   exact `IMAGE_TAG=1.3.0-rc.1`).
-4. **Fix and iterate:** land `fix:` commits on main, `just release pre` →
-   `v1.3.0-rc.2`, redeploy staging. Normal work can continue on main meanwhile;
-   everything merged goes into the next candidate.
-5. **Promote:** `just release final` → `v1.3.0`. CI publishes `1.3.0`, `1.3`,
-   `latest`, a stable GitHub release whose notes cover the whole cycle, and a
-   `## [v1.3.0]` changelog section. Then `just deploy` to production as usual.
-6. **Abandon:** just don't promote. Leave the tags (never delete or move a
-   pushed tag); the next `just release pre` or `final` continues from them.
+- **Start:** `just release minor rc` → `v1.3.0-rc.1`.
+- **CI treats any tag containing `-` as a prerelease:**
+  - GitHub release is created with `--prerelease` (never shown as "Latest").
+  - Image gets `1.3.0-rc.1` and the moving `next` tag, but **not** `X.Y` or
+    `latest`, so production (which follows `latest`) is untouched.
+  - Release notes: everything since the last stable tag.
+  - `CHANGELOG.md` keeps those changes under Unreleased.
+- **Try it:** deploy to staging with `IMAGE_TAG=next just deploy` (or the
+  exact `IMAGE_TAG=1.3.0-rc.1`).
+- **Fix and iterate:** land `fix:` commits on main, `just release pre` →
+  `v1.3.0-rc.2`, redeploy staging. Normal work can continue on main meanwhile;
+  everything merged goes into the next candidate.
+- **Promote:** `just release final` → `v1.3.0`. CI publishes `1.3.0`, `1.3`,
+  `latest`, a stable GitHub release whose notes cover the whole cycle, and a
+  `## [v1.3.0]` changelog section. Then `just deploy` to production as usual.
+- **Abandon:** just don't promote. Leave the tags (never delete or move a
+  pushed tag); the next `just release pre` or `final` continues from them.
 
 ## 5. CI/CD (GitHub Actions)
 
@@ -374,8 +380,13 @@ Two workflows, each with one job and a clear trigger contract. Both start with
   behaviours users depend on (status codes, content types, a 404). Add a
   negative assertion when you remove something. Dump `docker logs` in an
   `if: always()` step.
-- Then build **multi-arch** (`linux/amd64,linux/arm64`) and push, with
-  `cache-from/to: type=gha`. Write the pushed tags to `$GITHUB_STEP_SUMMARY`.
+- Then build **multi-arch** (`linux/amd64`, `linux/arm64`) and push. Each
+  platform builds in its own matrix job on a native runner (`ubuntu-24.04`,
+  `ubuntu-24.04-arm`), not under QEMU, with its own cache scope
+  (`type=gha,mode=max,scope=<image>-<arch>`). It pushes by digest, and a
+  final job merges the digests into one tagged manifest list with
+  `docker buildx imagetools create`. Details in `docker.md` §3.3. Write the
+  pushed tags to `$GITHUB_STEP_SUMMARY`.
 - **GHCR creates new packages private.** Flip to public once in package
   settings if hosts should pull anonymously.
 
@@ -387,63 +398,25 @@ pre-push guard). Lint is `biome ci .` for JS/TS and
 
 ## 6. The image
 
-- **Multi-stage, minimal final stage.** The final stage holds the runtime and
-  the app's production dependencies only: no compilers, package managers,
-  dev dependencies or source maps you don't need.
-- **Dependencies get their own stage**, installed from the lockfile before the
-  source is copied, so the layer is cached until the lockfile changes.
-- **`.dockerignore` as an allowlist:** `*` then `!` each file the image needs.
-  Nothing personal or local can leak into a published image by accident.
-- **Non-root user**, `EXPOSE`, and a `HEALTHCHECK` hitting `/health` (a
-  dedicated endpoint that doesn't depend on content or auth). Slim and alpine
-  images may lack `curl`, so probe with the runtime itself.
+The Dockerfile rules and templates live in `docker.md`, which is the source of
+truth for them:
+
+- **Alpine base images** (`node:<lts>-alpine`, `python:<ver>-alpine`). Use
+  `-slim` only where musl breaks a dependency, with the reason in a comment
+  on the `FROM` line (`docker.md` §1).
+- **Multi-stage, minimal final stage**, with dependencies installed from the
+  lockfile before the source is copied (`docker.md` §2, templates for Node,
+  Python and static sites).
+- **Cache-friendly layer order and cache mounts** (`docker.md` §3).
+- **`.dockerignore` as an allowlist:** `*`, then `!` for each file the image
+  needs. Nothing personal or local can leak into a published image by
+  accident.
+- **Non-root user**, `EXPOSE`, and a `HEALTHCHECK` on `/health` (a dedicated
+  endpoint that doesn't depend on content or auth), probed with the runtime
+  itself because Alpine has no `curl`.
 - **Config comes from the environment and mounts, not the image.** The same
   image runs in staging and production.
-- OCI labels (`org.opencontainers.image.title/description/source/licenses`).
-
-Node (pnpm):
-
-```dockerfile
-FROM node:24-alpine AS deps
-WORKDIR /app
-RUN corepack enable
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --prod --frozen-lockfile
-# (add a separate build stage with full deps if the project compiles TS/assets)
-
-FROM node:24-alpine
-WORKDIR /app
-ENV NODE_ENV=production PORT=3000
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-USER node
-EXPOSE 3000
-HEALTHCHECK CMD node -e "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
-CMD ["node", "src/server.js"]
-```
-
-Python (uv):
-
-```dockerfile
-FROM python:3.14-slim AS build
-COPY --from=ghcr.io/astral-sh/uv:0.12.19 /uv /bin/uv
-ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
-WORKDIR /app
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev --no-install-project
-COPY . .
-RUN uv sync --frozen --no-dev --no-editable
-
-FROM python:3.14-slim
-RUN useradd --system --uid 10001 app
-WORKDIR /app
-COPY --from=build --chown=app /app/.venv /app/.venv
-ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 PORT=8000
-USER app
-EXPOSE 8000
-HEALTHCHECK CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
-CMD ["myapp"]   # console script from [project.scripts]
-```
+- OCI labels (`org.opencontainers.image.title/description/source/version/revision/licenses`).
 
 ## 7. Deployment
 
@@ -467,34 +440,34 @@ point of the whole flow: what's deployed is what CI smoke-tested.
 
 ### Deploy recipe (`just deploy`)
 
-1. **Pre-flight locally:** validate the config you're about to ship (e.g.
-   `docker compose config -q`, app config lint) so a broken file fails on your
-   machine, not in production.
-2. **Sync config** to the server (`rsync --delete`, with include/exclude
-   filters so only the intended files go).
-3. `IMAGE_TAG=… docker compose pull -q <svc> && IMAGE_TAG=… docker compose up -d --wait <svc>`.
-   `--wait` blocks until the healthcheck passes, so a green deploy means a
-   healthy container.
-4. **One SSH connection for all of it.** Several back-to-back logins trip
-   per-source throttling (OpenSSH ≥ 9.8 `PerSourcePenalties`, fail2ban,
-   firewall rate limits) and get reset mid-handshake. Open a multiplexed master
-   and route everything through it:
+- **Pre-flight locally:** validate the config you're about to ship (e.g.
+  `docker compose config -q`, app config lint) so a broken file fails on your
+  machine, not in production.
+- **Sync config** to the server (`rsync --delete`, with include/exclude
+  filters so only the intended files go).
+- `IMAGE_TAG=… docker compose pull -q <svc> && IMAGE_TAG=… docker compose up -d --wait <svc>`.
+  `--wait` blocks until the healthcheck passes, so a green deploy means a
+  healthy container.
+- **One SSH connection for all of it.** Several back-to-back logins trip
+  per-source throttling (OpenSSH ≥ 9.8 `PerSourcePenalties`, fail2ban,
+  firewall rate limits) and get reset mid-handshake. Open a multiplexed master
+  and route everything through it:
 
-   ```bash
-   socket="$(mktemp -u "${TMPDIR:-/tmp}/deploy.XXXXXX")"
-   ssh -fNM -o ControlPath="$socket" "$DEPLOY_HOST"
-   trap 'ssh -o ControlPath="$socket" -O exit "$DEPLOY_HOST" 2>/dev/null' EXIT
-   remote="ssh -o ControlPath=$socket"
-   rsync -avz --delete -e "$remote" deploy/ "$DEPLOY_HOST:$DEPLOY_DIR/"
-   $remote "$DEPLOY_HOST" "cd '$DEPLOY_DIR' && export IMAGE_TAG='${IMAGE_TAG:-latest}' \
-     && docker compose pull -q '$SERVICE' && docker compose up -d --wait '$SERVICE'"
-   ```
+  ```bash
+  socket="$(mktemp -u "${TMPDIR:-/tmp}/deploy.XXXXXX")"
+  ssh -fNM -o ControlPath="$socket" "$DEPLOY_HOST"
+  trap 'ssh -o ControlPath="$socket" -O exit "$DEPLOY_HOST" 2>/dev/null' EXIT
+  remote="ssh -o ControlPath=$socket"
+  rsync -avz --delete -e "$remote" deploy/ "$DEPLOY_HOST:$DEPLOY_DIR/"
+  $remote "$DEPLOY_HOST" "cd '$DEPLOY_DIR' && export IMAGE_TAG='${IMAGE_TAG:-latest}' \
+    && docker compose pull -q '$SERVICE' && docker compose up -d --wait '$SERVICE'"
+  ```
 
-5. Every setting from §0 is overridable via env vars with sensible defaults
-   (`DEPLOY_HOST := env("DEPLOY_HOST", "…")` in the justfile).
-6. `just` echoes `#` lines inside a (non-shebang) recipe body: put explanatory
-   comments *above* the recipe; the last comment line becomes its
-   `just --list` doc.
+- Every setting from §0 is overridable via env vars with sensible defaults
+  (`DEPLOY_HOST := env("DEPLOY_HOST", "…")` in the justfile).
+- `just` echoes `#` lines inside a (non-shebang) recipe body: put explanatory
+  comments *above* the recipe; the last comment line becomes its
+  `just --list` doc.
 
 ### Changing live infrastructure safely
 
@@ -534,11 +507,12 @@ just deploy                       # sync, pull newest release, recreate, wait he
 - [ ] Version file at `0.0.0` (`package.json` or `pyproject.toml`); the first `just release minor` makes `v0.1.0`
 - [ ] Lockfile committed (`pnpm-lock.yaml` / `uv.lock`)
 - [ ] Linter config: `biome.json` (`biome init`) or `[tool.ruff]` in `pyproject.toml`
+- [ ] husky + commitlint hooks enforcing Conventional Commits (`pre-selected-tools.md` §2), and a commitlint check in CI
 - [ ] `cliff.toml` from §2
 - [ ] `justfile`: `lint`, `test`, `build`, `changelog`, `changelog-check`, `release-notes`, `release`, `deploy`
 - [ ] `.github/workflows/changelog.yml`: regen on main + tags, commit back, GitHub (pre)release on tags
-- [ ] `.github/workflows/docker.yml`: PR/manual: build + smoke; tag: build + smoke + multi-arch push
-- [ ] `Dockerfile`: multi-stage, deps stage, non-root, `HEALTHCHECK` on `/health`
+- [ ] `.github/workflows/docker.yml`: PR/manual: build + smoke; tag: build + smoke + per-arch native builds merged into a multi-arch manifest
+- [ ] `Dockerfile` per `docker.md`: Alpine, multi-stage, deps stage, cache mounts, non-root, `HEALTHCHECK` on `/health`
 - [ ] App exposes `/health`
 - [ ] `.dockerignore`: allowlist
 - [ ] `compose.yaml` in the repo showing the intended `image: ${IMAGE}:${IMAGE_TAG:-latest}` usage

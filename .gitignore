@@ -354,3 +354,10 @@ crash.log
 .dropbox
 .dropbox.attr
 .dropbox.cache
+
+# =============================================================================
+# AI agents (see ai-instructions.md)
+# =============================================================================
+.claude/settings.local.json
+.claude/worktrees/
+worktrees/

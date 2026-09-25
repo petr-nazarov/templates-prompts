@@ -10,13 +10,18 @@ go into every repo where they apply. **Suggested** tools are the ones our
 current projects already use. Start with them unless the project needs
 something else.
 
+The short version: **mise pins the tools, just runs them. pnpm + Biome +
+TypeScript, uv + Ruff for Python. React Router, Tailwind and shadcn/ui on the
+web, with searchable drop-downs. Postgres + Drizzle, Docker images in GHCR,
+Caddy in front, NetBird between machines, Claude Code with Superpowers.**
+
 ---
 
 ## 1. Every repository
 
 | Tool | Status | Use it for | Instead of |
 |---|---|---|---|
-| [git](https://git-scm.com) | Required | Version control. Use Conventional Commits (see `release-deploy.md`). | — |
+| [git](https://git-scm.com) | Required | Version control. Use Conventional Commits for every commit and Semantic Versioning for every release (see `release-deploy.md`). Commits are authored by the user, never with AI attribution. | — |
 | [mise](https://mise.jdx.dev) | Required | Pinning tool versions (`node`, `pnpm`, `python`, `uv`, `just`, …) in `mise.toml`. It manages versions only. Tasks go in the justfile. | nvm, pyenv, asdf, `.tool-versions`, mise tasks |
 | [just](https://just.systems) | Required | The one place to run the repo's commands (`just dev`, `just test`, `just release`, `just deploy`). Recipes are thin wrappers over `package.json` scripts or `uv run`. | Makefiles, loose shell scripts, npm scripts as the entry point |
 | [git-cliff](https://git-cliff.org) | Required | Generating `CHANGELOG.md` and release notes from conventional commits. CI regenerates the changelog. Nobody edits it by hand. | Hand-edited changelogs, custom `changelog.js` scripts, changesets |
@@ -25,6 +30,8 @@ something else.
 | Docker + Compose | Suggested | Local dependencies (Postgres, Mailpit) and production images. Use a `compose.yaml` per repo. | Installing services on the host |
 | GitHub Actions + GHCR | Suggested | CI. On a tag, build the image, smoke-test it and push it to `ghcr.io/<org>/<app>`. | Building images on the server |
 | [gitleaks](https://github.com/gitleaks/gitleaks) | Suggested | Scanning for secrets before commit and in CI. | — |
+| [SOPS](https://github.com/getsops/sops) + [age](https://github.com/FiloSottile/age) | Required | Secrets that must be versioned (server `.env` files, infra variables): committed as `*.sops.*` files, with values encrypted and keys readable. The age private key never enters the repo. Local dev `.env` files stay uncommitted. | Plaintext secrets in git, secrets passed around in chat |
+| [Dev Containers](https://containers.dev) (`@devcontainers/cli`) | Suggested | A reproducible dev environment for repos with awkward system dependencies, or for running agents in isolation. Commit `.devcontainer/`. Forward the host's `ssh-agent` socket; never mount private keys. Use docker-outside-of-docker. | "Works on my machine" setup docs |
 
 A typical `mise.toml`:
 
@@ -45,12 +52,15 @@ uv = "latest"
 |---|---|---|---|
 | [pnpm](https://pnpm.io) | Required | Package manager and workspaces (`pnpm-workspace.yaml`). | npm, yarn, bun |
 | [Biome](https://biomejs.dev) | Required | Lint and format in one tool (`biome check`, `biome check --write`). | ESLint + Prettier, lint-staged setups |
+| [husky](https://typicode.github.io/husky) + [commitlint](https://commitlint.js.org) | Required | Git hooks, committed in `.husky/`: `commit-msg` runs `commitlint --edit "$1"` (`@commitlint/config-conventional`), so every commit is a Conventional Commit, and `pre-commit` runs `biome check --staged` and `gitleaks git --staged`. Installed by the `prepare` script on `pnpm install`. CI runs commitlint on PR commits too, since hooks can be skipped. | Unchecked commit messages, lint-staged, pre-commit (Python framework) |
 | TypeScript | Suggested | All JS code, with `strict` on. | Plain JS |
 | Node.js LTS | Suggested | Runtime, pinned by mise. Use `node:<lts>-alpine` in Dockerfiles. | — |
 | [Vite](https://vite.dev) | Suggested | Dev server and bundler for SPAs. | webpack, CRA |
 | [Vitest](https://vitest.dev) | Suggested | Unit and integration tests. | Jest |
 | [Playwright](https://playwright.dev) | Suggested | End-to-end tests against a compose stack. | Cypress |
 | [Testcontainers](https://testcontainers.com) | Suggested | Integration tests against a real, throwaway Postgres. | Mocked databases, shared test DBs |
+| [WireMock](https://wiremock.org) | Suggested | Faking third-party HTTP APIs in integration tests (via its Testcontainers module). | Hitting real vendor sandboxes from tests |
+| [Stryker](https://stryker-mutator.io) | Suggested | Periodic mutation testing of critical modules (money, auth). See `testing.md`. | Coverage percentage targets |
 | [Turborepo](https://turbo.build) | Suggested | Only for monorepos with several apps and libs. | nx, lerna |
 | [Zod](https://zod.dev) | Suggested | Runtime validation and shared contracts between client and server. | joi, yup, class-validator for new code |
 
@@ -87,6 +97,7 @@ apps: use a searchable picker, not the platform's plain picker.
 | [Hono](https://hono.dev) | Suggested | Small APIs and a single process that serves `dist/` plus `/api`. | Express for new code |
 | [NestJS](https://nestjs.com) | Suggested | Larger APIs that need modules, DI and many domains. Use SWC (`unplugin-swc`) for tests. | — |
 | PostgreSQL | Suggested | Default database. Use `postgres:<major>-alpine` in compose. | MySQL, MongoDB unless required |
+| [pino](https://getpino.io) (`nestjs-pino`) | Required | Logging: `pino-pretty` to the console and `pino-roll` to rotating ECS JSON Lines files (`@elastic/ecs-pino-format`), with redaction and a request ID (see `observability.md`). | `console.log`, winston |
 | [Drizzle ORM](https://orm.drizzle.team) + drizzle-kit | Suggested | Schema, queries and migrations. | Prisma, TypeORM, MikroORM |
 | [Mailpit](https://mailpit.axllent.org) | Suggested | Catching email in local and e2e environments. | Real SMTP in dev |
 
@@ -101,7 +112,7 @@ Pick **one** per project:
 | [Better Auth](https://better-auth.com) | Required (self-hosted) | The app owns its users in its own Postgres. Pairs with Drizzle, and `just db-generate` regenerates its schema. | Passport + JWT, Lucia, Auth.js |
 | [Descope](https://descope.com) | Required (managed) | The client wants a hosted identity provider (flows, SSO, passkeys, OTP) and doesn't want to run it themselves. SDKs exist for JS and Python. | Auth0, Clerk, Cognito, Firebase Auth |
 
-Better Auth and Descope are for the app's own users. Authelia (section 8)
+Better Auth and Descope are for the app's own users. Authelia (§8)
 guards internal tools. It isn't an app auth library.
 
 ---
@@ -123,6 +134,7 @@ guards internal tools. It isn't an app auth library.
 | [Ruff](https://docs.astral.sh/ruff) | Suggested | Lint and format (`select = ["E","F","I","UP","B","SIM"]`). | black, isort, flake8, pylint |
 | pytest (+ pytest-asyncio) | Suggested | Tests. Use Testcontainers for real databases. | unittest |
 | [FastAPI](https://fastapi.tiangolo.com) + uvicorn | Suggested | HTTP APIs. | Flask, Django REST for new services |
+| stdlib `logging` + [ecs-logging](https://github.com/elastic/ecs-logging-python) | Required | Logging: a coloured `StreamHandler` and a `RotatingFileHandler` with the ECS formatter, behind a `QueueHandler` (see `observability.md`). | `print`, `basicConfig` plain text |
 | pydantic-settings | Suggested | Config from the environment. | Hand-rolled `os.environ` parsing |
 | hatchling | Suggested | Build backend for workspace packages (`src/` layout). | setuptools |
 
@@ -133,10 +145,15 @@ guards internal tools. It isn't an app auth library.
 | Tool | Status | Use it for | Instead of |
 |---|---|---|---|
 | [Caddy](https://caddyserver.com) | Required | Reverse proxy and automatic TLS on self-hosted servers. One shared Caddyfile per server. | nginx + certbot, Traefik |
-| [Authelia](https://www.authelia.com) | Required | SSO and 2FA in front of internal tools and dashboards, through Caddy `forward_auth`. It protects things that have no login of their own. | Basic auth, exposing admin UIs |
-| Docker Compose on the server | Suggested | Running published images: `docker compose pull && up -d --force-recreate --wait`. | Building on the server |
-| [Pulumi](https://www.pulumi.com) | Required | Cloud infrastructure as code (Python or TypeScript), whenever a project uses AWS or another cloud. | Terraform, CDK, clicking in consoles |
-| Kubernetes + Kustomize + ArgoCD | Only if required | Only for client projects that already run on it. A single server with Compose is the default. | — |
+| [Authelia](https://www.authelia.com) | Required | SSO and 2FA in front of internal tools and dashboards, through Caddy `forward_auth`. It protects things that have no login of their own. | Basic auth, exposing admin UIs, Authentik |
+| Docker Compose on the server | Suggested | Running published images: `docker compose pull && up -d --force-recreate --wait`. The default for one server. | Building on the server |
+| [Docker Swarm](https://docs.docker.com/engine/swarm/) | Suggested | 2–10 servers: the same Compose syntax, rolling updates, service discovery. Bind-mount directories must exist before deploying. | Kubernetes for small clusters |
+| [Pulumi](https://www.pulumi.com) | Required | Cloud infrastructure as code (Python or TypeScript), whenever a project uses AWS or another cloud. It runs from CI. Nobody changes resources by hand in a console. | Terraform, CDK, clicking in consoles |
+| [Ansible](https://docs.ansible.com) | Suggested | Configuring servers after provisioning: users, packages, Docker, and SSH hardening (key-only login, password auth off). It's declarative, so re-runs are safe. Secrets via `community.sops`. | Hand-run setup scripts, SSH-ing in to fix things |
+| [Cloudflare](https://www.cloudflare.com) | Suggested | DNS and the proxy in front of public hostnames: hides the origin IP, WAF, bot filtering. The origin accepts web traffic only through the proxy, and admin access goes over NetBird. | Exposing the origin IP directly |
+| [Restic](https://restic.net) | Required (where data persists) | Encrypted, incremental, off-site backups of databases (dump first) and bind-mounted data to S3-compatible storage, on a schedule, with a restore tested at least once. | No backups, same-disk copies |
+| [Dozzle](https://dozzle.dev) + [Beszel](https://beszel.dev) + [Gatus](https://github.com/TwiN/gatus) | Suggested | Small-setup observability: container logs, host/container metrics, uptime checks with alerts. Grafana + Loki + Prometheus only when the project needs more (see `observability.md`). | Uptime Kuma, no monitoring |
+| Kubernetes + Kustomize + ArgoCD | Only if required | Only for client projects that already run on it. Compose for one server and Swarm for a few are the defaults. | — |
 
 ---
 
@@ -149,11 +166,11 @@ guards internal tools. It isn't an app auth library.
 
 ---
 
-## Using this in a new repository
+## 10. Bootstrapping a new repo: checklist
 
-1. Copy this file into the repo as `docs/tools.md` and link it from `AGENTS.md`.
-2. Delete the sections the repo doesn't need.
-3. Create `mise.toml`, a `justfile` with `_default: @just --list --unsorted`,
-   `biome.json` or the Ruff config, and `cliff.toml`.
-4. If the repo departs from one of these choices, note it under the entry and
-   say why.
+- [ ] This file copied to `docs/tools.md`, linked from `AGENTS.md`, with the sections the repo doesn't need deleted
+- [ ] `mise.toml` pinning the tools the repo uses
+- [ ] `justfile` with `_default: @just --list --unsorted`
+- [ ] `biome.json` or the Ruff config
+- [ ] husky hooks (`commit-msg` with commitlint, `pre-commit` with Biome and gitleaks) and `commitlint.config.js`
+- [ ] Any departure from these choices noted under its entry, with the reason
