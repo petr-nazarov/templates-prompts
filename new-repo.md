@@ -82,6 +82,8 @@ with each.
 | Task tracker | GitHub Issues (preferred), `tasks/<topic>.md` | `tickets` skill or `tasks/` |
 | GitHub | owner/name, public or private, create it now or later | remote, CI, GHCR |
 | Deploys to | nowhere yet, one server (Compose), a few servers (Swarm), a cloud (Pulumi) | `release-deploy.md`, `docker.md` |
+| Notifications (multi-select)? | none (default), Pushover, a Telegram group | whether `notifications.md` applies, and its channels |
+| What should ping? (ignored if no channel) | breakage (always), waiting for a person (approvals, prompts), routine (started, finished, deployed) | `notifications.md` §0 and §1 routing |
 | Existing mode only | which of the audit gaps to fix | the build list |
 
 ## 3. Plan: which templates apply
@@ -94,6 +96,7 @@ with each.
 | `observability.md` | the repo runs a service | `docs/observability.md` |
 | `release-deploy.md` | always (releases); deploy parts if it deploys | `docs/release-deploy.md`, **Project settings** filled |
 | `docker.md` | it ships an image | `docs/docker.md` |
+| `notifications.md` | the user chose at least one channel in §2 (never by default) | `docs/notifications.md`, with only the chosen channels' sections, **Project settings** filled and the §1 routing table cut down to them |
 | `ai-instructions.md` | always | `AGENTS.md`, `CLAUDE.md` symlink, `.claude/`, `.mcp.json` (built from it, not copied) |
 | `required-skills.md` | always | `.claude/skills/cm/`, `.claude/skills/handover/` (written from it) |
 | `ticketing.md` | tracker is GitHub Issues | `.claude/skills/tickets/` (the files it contains) |
@@ -126,6 +129,11 @@ one, work on a branch (`chore/adopt-templates`) and open a PR at the end.
   with both outputs (`observability.md` §1), request-ID middleware, `/health`
   returning the version, and one test of each type that applies. Commit:
   `feat: add application skeleton`.
+- **Notifier** (only if a channel was chosen): the notifier script, its
+  variables in `.env.example`, its tests against a fake `curl`, and the
+  heartbeat if one applies (`notifications.md` §8). The real ping waits
+  until the user has filled in the credentials. Commit:
+  `feat: add notifier`.
 - **Containers and CI:** `compose.yaml` for local dependencies, the
   `Dockerfile` and `.dockerignore` (if it ships an image), and the GitHub
   workflows (`release-deploy.md` §5). Commit: `ci: add build and release
@@ -156,6 +164,7 @@ brainstorm, then spec, then plan.
   - Every departure from the templates, with the reason (also recorded in
     `docs/templates-sync.md`).
   - What the user still has to do: secrets to fill in, GHCR package
-    visibility, branch protection on `main`, DNS, the first
-    `just release minor`.
+    visibility, branch protection on `main`, DNS, the Pushover app or
+    Telegram bot and the one manual test ping if notifications were chosen,
+    the first `just release minor`.
   - Any problem found in the templates themselves.

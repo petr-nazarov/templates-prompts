@@ -62,6 +62,7 @@ setup and code, and records every decision.
 | [`observability.md`](observability.md) | Logging to both a readable console and rotating ECS JSON Lines files, request IDs, redaction, access logs and retention, monitoring, health and uptime checks. | `docs/observability.md` |
 | [`release-deploy.md`](release-deploy.md) | Commits, the changelog, releases and prereleases, CI/CD and deployment. | `docs/release-deploy.md` |
 | [`docker.md`](docker.md) | Alpine multi-stage Dockerfiles, build cache, multi-arch builds, GHCR, compose, deploying. | `docs/docker.md` |
+| [`notifications.md`](notifications.md) | Optional, only when chosen at setup. Pinging a person through Pushover and/or a Telegram group: routing by level, one notifier script, content-free messages, a local rate limiter, provider setup and error handling, tests against a fake, a dead-man's switch, adding another channel. | `docs/notifications.md` |
 
 **Used to build the agent setup** (read by the agent, not copied)
 
